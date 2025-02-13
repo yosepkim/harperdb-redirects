@@ -1,32 +1,32 @@
 import { httpRequest } from 'http-request';
-
-const URL_REGEX = /\/sku\/(?<sku>[a-zA-Z0-9]+)\/(?<suffix>.*)/;
+import { logger } from 'log';
 
 export async function onClientRequest(request) {
-    const regexMatch = request.url.match(URL_REGEX);
-
     try {
-        if (regexMatch) {
-            const sku = regexMatch.groups.sku;
+        const url = '';
+        const harperToken = '';
+        const requestHeaders =  { 
+            'Authorization': `Basic ${harperToken}`,
+            'Content-Type': 'application/json',
+            'path': request.path
+        }
+        const options = {
+            method: 'GET',
+            headers: requestHeaders
+        };
+        const response = await httpRequest(url, options);
 
-            const url = `https://bb.edgecloud9.com/Redirects/?sku=${sku}`;
-            const harperToken = '';
-            const options = {
-                method: 'GET',
-                headers: { 'Authorization': `Basic ${harperToken}`, 'Content-Type': 'application/json' },
-            };
-            const response = await httpRequest(url, options);
-            const payload = await response.json();
-            const productData = payload[0];
-
-            //request.respondWith(200, {}, JSON.stringify(productData) + "-" + sku);
-            if (productData) {
-                const newUrl = `/products/${productData.tag}/${regexMatch.groups.suffix}`
-
-                request.respondWith(301, { location: [newUrl] }, "");
+        if (response.status === 200) {
+            const redirectRule = await response.json();
+            if (redirectRule) {
+                return request.respondWith(
+                    redirectRule.statusCode,
+                    { Location: [redirectRule.redirectURL] },
+                    ''
+                )
             }
         }
-    } catch (exception) {
-        request.respondWith(500, {}, exception);
+    } catch(exception) {
+        logger.log(`Error occured while calling HDB: ${exception.message}`);
     }
 }
